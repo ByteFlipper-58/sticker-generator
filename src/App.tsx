@@ -184,6 +184,12 @@ export default function App() {
   const forceWhiteBackground = "\n\n**Background:** Plain solid white #FFFFFF background only (no background colors/elements)";
   const skinTonePersistence = "ALWAYS PRESERVE the skin tone / hair style and other distict features of the uploaded character/person.";
   const colorPalletPersistence = "First, describe the distinct features and style of the uploaded image in great detail e.g. hair style name, outfit name, and so on. Also, specify the color of each main element using its hexadecimal (HEX) code.";
+  const getGenerationConfig = () => ({
+    responseModalities: ['IMAGE'],
+    imageConfig: {
+      aspectRatio: '1:1',
+    },
+  });
 
   const refreshApiKeyPresence = () => { const effectiveKey = ((import.meta as any).env?.VITE_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY') || '').trim(); setHasApiKey(!!effectiveKey); };
   const handleSetApiKey = () => { const current = localStorage.getItem('GEMINI_API_KEY') || ''; const input = window.prompt('Enter Gemini API Key', current); if (input !== null) { localStorage.setItem('GEMINI_API_KEY', input.trim()); refreshApiKeyPresence(); } };
@@ -219,7 +225,7 @@ export default function App() {
   const makeApiCallWithRetry = async (payload, emotion) => {
     const storedKey = localStorage.getItem('GEMINI_API_KEY');
     const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || storedKey || '';
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
     let attempt = 0; const maxAttempts = 3; const initialDelay = 1000;
     while (attempt < maxAttempts) {
       try {
@@ -254,7 +260,7 @@ export default function App() {
           case 'cartoon-dino': fullPrompt = colorPalletPersistence + userPrompt + forceWhiteBackground; break;
           default: fullPrompt = colorPalletPersistence + userPrompt + forceCharacter + forceWhiteBackground + skinTonePersistence;
         }
-        const payload = { contents: [{ parts: [{ text: fullPrompt }, { inlineData: { mimeType: uploadedImage.mimeType, data: uploadedImage.data } }] }], generationConfig: { responseModalities: ['IMAGE'] } } as any;
+        const payload = { contents: [{ parts: [{ text: fullPrompt }, { inlineData: { mimeType: uploadedImage.mimeType, data: uploadedImage.data } }] }], generationConfig: getGenerationConfig() } as any;
         const result = await makeApiCallWithRetry(payload, emotion);
         setGeneratedStickers(prev => {
           const next = [...prev];
@@ -276,7 +282,7 @@ export default function App() {
     const userPrompt = getStylePrompt(selectedStyle, emotionToRegenerate);
     let fullPrompt = '';
     switch (selectedStyle) { case 'vintage-bollywood': fullPrompt = colorPalletPersistence + userPrompt + skinTonePersistence; break; case 'cartoon-dino': fullPrompt = colorPalletPersistence + userPrompt + forceWhiteBackground; break; default: fullPrompt = colorPalletPersistence + userPrompt + forceCharacter + forceWhiteBackground + skinTonePersistence; }
-    const payload = { contents: [{ parts: [{ text: fullPrompt }, { inlineData: { mimeType: uploadedImage.mimeType, data: uploadedImage.data } }] }], generationConfig: { responseModalities: ['IMAGE'] } } as any;
+    const payload = { contents: [{ parts: [{ text: fullPrompt }, { inlineData: { mimeType: uploadedImage.mimeType, data: uploadedImage.data } }] }], generationConfig: getGenerationConfig() } as any;
     const result = await makeApiCallWithRetry(payload, emotionToRegenerate);
     setGeneratedStickers(prev => prev.map(s => s.emotion === emotionToRegenerate ? { ...result, isLoading: false } : s));
   };
